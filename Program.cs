@@ -7,18 +7,19 @@ using TopDownDungeon.UI;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
+using TopDownDungeon.Services.Logic;
 
 HostApplicationBuilder builder = new HostApplicationBuilder(args);
 
 builder.Services.AddSingleton<Screen>(new Screen());
+builder.Services.AddSingleton<MapBuilder>(new MapBuilder());
 using IHost host = builder.Build();
 
 await host.RunAsync();
 
-Screen _screen = host.Services.GetService<Screen>();
+Screen? _screen = host.Services.GetService<Screen>();
+MapBuilder? _mapBuilder = host.Services.GetService<MapBuilder>();
 
-int foodCount = 10;
-int monsterCount = 20;
 int playerFood = 10;
 int playerHealth = 100;
 int playerStamina = 20;
@@ -33,20 +34,6 @@ ConsoleColor messageColor = ConsoleColor.Cyan;
 (int Height, int Width) lastKnownWindowSize = (0, 0);
 (int X, int Y) playerLocation = (0, 0);
 (int X, int Y) lastPlayerLocation = (0, 0);
-(int X, int Y)[] foodLocations = new (int X, int Y)[foodCount];
-(int X, int Y)[] monsterLocations = new (int X, int Y)[monsterCount];
-Dictionary<ConsumableType, string> foodIcons = new Dictionary<ConsumableType, string>()
-{
-    {ConsumableType.Pie, "@" },
-    {ConsumableType.Bread,"#" },
-    {ConsumableType.Meat, "%" }
-};
-Dictionary<ConsumableType, int> foodValues = new Dictionary<ConsumableType, int>()
-{
-    {ConsumableType.Pie, 3 },
-    {ConsumableType.Bread, 7 },
-    {ConsumableType.Meat, 10 }
-};
 
 
 

@@ -5,9 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace TopDownDungeon.Models;
-internal class Encounter
+internal class Encounter : MapItem
 {
-    public MapPoint? Location { get; set; }
     public bool PreviouslyVisited { get; set; } = false;
     public BattleLog? Battle { get; set; }
     public Npc Opponent { get; set; }

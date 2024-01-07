@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TopDownDungeon.Models;
 using TopDownDungeon.Services.Consumables;
+using TopDownDungeon.Services.Encounters;
 
 namespace TopDownDungeon.Services.Logic;
 internal class MapBuilder
@@ -13,56 +14,57 @@ internal class MapBuilder
     private int screenBorderWidth = 1;
     private int topPadding = 1;
     private int bottomPadding = 2;
-    private MapPoint spawn => new(MapWidth - screenBorderWidth, MapHeight - bottomPadding);
-    public static int MapHeight { get; set; } = 0;
-    public static int MapWidth { get; set; } = 0;
-    public static List<Food> Meals { get; set; } = [];
-    public static List<Potion> Potions { get; set; } = [];
 
-    public static Task<Map> CreateMap(int height, int width, int meals = 15, int potions = 7, int encounters = 42)
+    private List<MapPoint> UsedPoints = [];
+
+    private MapPoint spawn => new(MapWidth - screenBorderWidth, MapHeight - bottomPadding);
+    public int MapHeight { get; private set; } = 0;
+    public int MapWidth { get; private set; } = 0;
+
+    public Task<Map> CreateMap(int height, int width, int meals = 15, int potions = 7, int encounters = 42)
     {
+        var map = new Map();
+        List<Food> Meals = [];
+        List<Potion> Potions = [];
+        List<Encounter> Encounters = [];
+
         MapHeight = height;
         MapWidth = width;
 
-        Meals = FoodGenerator.GenerateFood(meals);
-        Potions = PotionGenerator.GeneratePotions(potions);
+        map.Meals = FoodFactory.Create(meals);
+        map.Potions = PotionFactory.Create(potions);
+        map.Encounters = EncounterFactory.Create(encounters);
 
-        return Task.FromResult(new Map());
+        SetMapItemLocations();
+
+        return Task.FromResult(map);
     }
 
-
-
-    private List<MapPoint> ()
+    private void SetMapItemLocations()
     {
+        foreach (var meal in Meals)
+            meal.Location = GenerateRandomPoint();
+        foreach (var potion in Potions)
+            potion.Location = GenerateRandomPoint();
+        foreach (var encounter in Encounters)
+            encounter.Location = GenerateRandomPoint();
+    }
 
-        for (int i = 0; i < foodCount; i++)
-        {
-            var point = GenerateRandomPoint();
-            if (!foodLocations.Contains(point))
-                foodLocations[i] = point;
-        }
-    }
-    private List<MapPoint> DesignateEncounterPoints()
-    {
-        for (int i = 0; i < monsterCount; i++)
-        {
-            var point = GenerateRandomPoint();
-            if (!monsterLocations.Contains(point))
-                if (!foodLocations.Contains(point))
-                    monsterLocations[i] = point;
-        }
-    }
+
     private MapPoint GenerateRandomPoint()
     {
         var randomX = new Random();
         var randomY = new Random();
 
         var point = new MapPoint(0, 0);
-        while (!CheckBounds(point))
+        do
         {
             point.X = randomX.Next(1, MapWidth);
             point.Y = randomY.Next(bottomPadding, MapHeight);
+            if (!UsedPoints.Contains(point))
+                UsedPoints.Add(point);
         }
+        while (!CheckBounds(point) && !UsedPoints.Contains(point));
 
         return point;
     }
@@ -73,27 +75,5 @@ internal class MapBuilder
         var checkY = point.Y > 1 && point.Y < (MapHeight - topPadding);
 
         return notSpawn && checkX && checkY;
-    }
-
-
-
-
-    private bool CheckForFood()
-    {
-        var result = false;
-        for (int i = 0; i < foodLocations.Length; i++)
-        {
-            result = result || (foodLocations[i] == playerLocation);
-        }
-        return result;
-    }
-    private bool CheckForEnconter()
-    {
-        var result = false;
-        for (int i = 0; i < monsterLocations.Length; i++)
-        {
-            result = result || (monsterLocations[i] == playerLocation);
-        }
-        return result;
     }
 }

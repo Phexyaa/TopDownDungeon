@@ -69,20 +69,13 @@ void CheckWindowSize()
 }
 
 
-void DrawBoard()
+void DrawBoard(Map map)
 {
-    CheckWindowSize();
-    DrawBorder();
-    DrawFood();
-    DrawPlayer();
-}
-void ShowPosition()
-{
-    Console.ForegroundColor = messageColor;
-    Console.SetCursorPosition(lastKnownWindowSize.Width - 15, 0);
-    Console.Write($"({playerLocation.X}, {playerLocation.Y})");
-    Console.ResetColor();
+    if (_screen == null)
+        throw new NullReferenceException("Screen service was null");
 
+    _screen.DrawBorder();
+    _screen.DrawMap(map);
 }
 
 //Logic

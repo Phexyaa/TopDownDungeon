@@ -1,20 +1,29 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Eventing.Reader;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TopDownDungeon.Enums;
 using TopDownDungeon.Models;
+using TopDownDungeon.Services.Logic;
 
 namespace TopDownDungeon.UI;
 internal class Screen
 {
-    private char borderHorizontal = '=';
-    private char borderVertical = '|';
-    private char player = 'H';
-    private char food = '@';
-    private char potion = '&';
-    private char encounter = '#';
+    private Map? _map;
+
+
+    private Dictionary<MapSymbol, char> _charMap = new Dictionary<MapSymbol, char>()
+    {
+        { MapSymbol.BorderHorizontal, '=' },
+        { MapSymbol.BorderVertical, '|' },
+        { MapSymbol.Player, 'H' },
+        { MapSymbol.Food, '@' },
+        { MapSymbol.Potion, '&' },
+        { MapSymbol.NewEncounter, '!' },
+        { MapSymbol.PreviousEncounter, '§' },
+    };
 
     private int eventDisplayCharWidth = 15;
     internal ConsoleColor Foreground { get; set; } = ConsoleColor.Green;
@@ -52,72 +61,90 @@ internal class Screen
         Console.ForegroundColor = Foreground;
 
         Console.SetCursorPosition(0, 1);
-        Console.Write("".PadRight(CheckWindowSize().Width, borderHorizontal));
+        Console.Write("".PadRight(CheckWindowSize().Width, _charMap[MapSymbol.BorderHorizontal]));
 
         for (int i = 2; i < CheckWindowSize().Height; i++)
         {
             Console.SetCursorPosition(0, i);
-            Console.Write(borderVertical);
+            Console.Write(_charMap[MapSymbol.BorderVertical]);
         }
         for (int i = 2; i < CheckWindowSize().Height; i++)
         {
             Console.SetCursorPosition(CheckWindowSize().Width - 1, i);
-            Console.Write(borderVertical);
+            Console.Write(_charMap[MapSymbol.BorderVertical]);
         }
 
         Console.SetCursorPosition(0, CheckWindowSize().Height - 1);
-        Console.Write("".PadRight(CheckWindowSize().Width, borderHorizontal));
+        Console.Write("".PadRight(CheckWindowSize().Width, _charMap[MapSymbol.BorderHorizontal]));
 
         Console.ResetColor();
     }
 
-    internal void DrawPlayer(int x, int y)
+    private void DrawPlayer(int x, int y)
     {
         Console.ForegroundColor = PlayerColor;
 
         Console.SetCursorPosition(x, y);
-        Console.Write(player);
+        Console.Write(_charMap[MapSymbol.Player]);
 
         Console.ResetColor();
     }
-    internal void DrawConsumable(List<Consumable> consumables)
+    private void DrawMapItems(List<Food> meals)
     {
-        foreach (var consumable in consumables)
+        foreach (var meal in meals)
         {
-            for (int i = 0; i < foodLocations.Length; i++)
+            for (int i = 0; i < meals.Count; i++)
             {
-                Console.SetCursorPosition(foodLocations[i].X, foodLocations[i].Y);
-
-                var r = new Random().Next(1, 4);
-                ConsumableType foodType = ConsumableType.Pie; ;
-                switch (r)
-                {
-                    case 1:
-                        foodType = ConsumableType.Pie; break;
-                    case 2:
-                        foodType = ConsumableType.Bread; break;
-                    case 3:
-                        foodType = ConsumableType.Meat; break;
-                }
-                switch (consumable.Type)
-                {
-                    case ConsumableType.Food:
-                        Console.ForegroundColor = FoodColor;
-
-                        Console.Write(food);
-                        break;
-                    case ConsumableType.Potion:
-                        Console.ForegroundColor = PotionColor;
-                        Console.Write(food);
-                        break;
-                    case null:
-                        break;
-                    default:
-                        break;
-                }
+                Console.SetCursorPosition(meal.Location.X, meal.Location.Y);
+                Console.ForegroundColor = FoodColor;
+                Console.Write(_charMap[MapSymbol.Food]);
 
                 Console.ResetColor();
             }
         }
     }
-}
+    private void DrawMapItems(List<Potion> potions)
+    {
+        foreach (var potion in potions)
+        {
+            for (int i = 0; i < potions.Count; i++)
+            {
+                Console.SetCursorPosition(potion.Location.X, potion.Location.Y);
+                Console.ForegroundColor = PotionColor;
+                Console.Write(_charMap[MapSymbol.Potion]);
+
+                Console.ResetColor();
+            }
+        }
+    }
+    private void DrawMapItems(List<Encounter> encounters)
+    {
+        foreach (var encounter in encounters)
+        {
+            Console.SetCursorPosition(encounter.Location.X, encounter.Location.Y);
+            
+            Console.ForegroundColor = EncounterColor;
+            
+            if (encounter.PreviouslyVisited)
+                Console.Write(_charMap[MapSymbol.PreviousEncounter]);
+            else
+                Console.Write(_charMap[MapSymbol.NewEncounter]);
+
+            Console.ResetColor();
+
+        }
+
+        internal void ShowPosition(MapPoint point)
+        {
+            Console.ForegroundColor = Foreground;
+
+            Console.SetCursorPosition(CheckWindowSize().Width - 15, 0);
+            Console.Write($"({point.X}, {point.Y})");
+
+            Console.ResetColor();
+        }
+        internal void DrawMap(Map map)
+        {
+            throw new NotImplementedException();
+        }
+    }

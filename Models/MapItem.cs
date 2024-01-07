@@ -1,6 +1,6 @@
 ﻿namespace TopDownDungeon.Models;
 
-internal abstract class MapItem
+internal interface IMapItem
 {
-    public MapPoint? Location { get; set; }
+    MapPoint Location { get; set; }
 }

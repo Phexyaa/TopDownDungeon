@@ -3,11 +3,12 @@ using TopDownDungeon.Enums;
 
 namespace TopDownDungeon.Models;
 
-internal abstract class Consumable : MapItem
+internal abstract class Consumable : IMapItem
 {
     internal ConsumableType? Type { get; set; } = null;
     public string? Description { get; set; }
     public int EffectValue { get; set; }
+    public MapPoint Location { get; set; } = new MapPoint();
 
 
     public Consumable()

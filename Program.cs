@@ -98,9 +98,6 @@ void MovePlayer(MovementDirection direction)
     {
         DrainStamina(1);
 
-        Console.SetCursorPosition(map.PlayerPosition.X, map.PlayerPosition.Y);
-        Console.Write(" ");
-
         map.PlayerPosition = newLocation;
 
         _screen.DrawPlayer(newLocation);
@@ -118,8 +115,6 @@ void IncreaseHP(int amount) => playerHealth += amount;
 void DecreaseHP(int amount) => playerHealth -= amount;
 
 //Main
-Console.CursorVisible = false;
-Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
 map.PlayerPosition.X = _state.Spawn.X;
 map.PlayerPosition.Y = _state.Spawn.Y;
 _screen.DrawMap(map);

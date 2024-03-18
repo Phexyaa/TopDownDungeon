@@ -72,14 +72,20 @@ internal class Screen
 
         Console.ResetColor();
     }
-    internal void DrawPlayer(MapPoint point)
+    internal void DrawPlayer(MapPoint location)
     {
         Console.ForegroundColor = PlayerColor;
 
-        Console.SetCursorPosition(point.X, point.Y);
+        Console.SetCursorPosition(location.X, location.Y);
         Console.Write(_charMap[MapSymbol.Player]);
 
         Console.ResetColor();
+    }
+    internal void DrawPlayer(MapPoint newLocation, MapPoint oldLocation)
+    {
+        Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
+        Console.Write(" ");
+        DrawPlayer(newLocation);
     }
     private void DrawBorder()
     {
@@ -161,6 +167,8 @@ internal class Screen
     internal void DrawMap(Map map)
     {
         Console.Clear();
+        Console.CursorVisible = false;
+        Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
         DrawBorder();
         DrawPlayer(map.PlayerPosition);
         DrawMapItems(map.Meals);

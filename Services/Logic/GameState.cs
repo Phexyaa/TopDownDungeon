@@ -8,7 +8,7 @@ using TopDownDungeon.Models;
 namespace TopDownDungeon.Services.Logic;
 internal class GameState
 {
-    public MapPoint? Spawn { get; private set; }
+    public MapPoint Spawn { get; private set; } = new MapPoint();
 
-    internal void SetSpawnPoint(MapPoint? spawn) => Spawn = spawn;
+    internal void SetSpawnPoint(MapPoint spawn) => Spawn = spawn;
 }

@@ -8,13 +8,15 @@ using TopDownDungeon.Models;
 namespace TopDownDungeon.Services.Logic;
 internal class Map
 {
-    public List<Food> Meals { get; set; }
-    public List<Potion> Potions { get; set; }
-    public List<Encounter> Encounters { get; set; }
-    public int Height { get; set; }
-    public int Width { get; set; }
+    internal List<Food> Meals { get; set; }
+    internal List<Potion> Potions { get; set; }
+    internal List<Encounter> Encounters { get; set; }
+    internal int Height { get; set; }
+    internal int Width { get; set; }
+    internal int TESTES = 0;
+    internal MapPoint PlayerPosition { get; set; } = new MapPoint();
 
-    public Map(List<Food> food, List<Potion> potions, List<Encounter> encounters, int height = 0, int width = 0)
+    internal Map(List<Food> food, List<Potion> potions, List<Encounter> encounters, int height = 0, int width = 0)
     {
         Meals = food;
         Potions = potions;

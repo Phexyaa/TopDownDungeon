@@ -8,33 +8,42 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
 using TopDownDungeon.Services.Logic;
+using TopDownDungeon.Models;
+using System;
 
 HostApplicationBuilder builder = new HostApplicationBuilder(args);
 
-builder.Services.AddSingleton<Screen>(new Screen());
-builder.Services.AddSingleton<MapBuilder>(new MapBuilder());
+builder.Services.AddSingleton<GameState>();
+builder.Services.AddSingleton<Screen>();
+builder.Services.AddSingleton<MapBuilder>();
 using IHost host = builder.Build();
 
-await host.RunAsync();
+host.Start();
 
 Screen? _screen = host.Services.GetService<Screen>();
+if (_screen == null)
+    throw new NullReferenceException("Screen service was null");
+
 MapBuilder? _mapBuilder = host.Services.GetService<MapBuilder>();
+if (_mapBuilder == null)
+    throw new NullReferenceException("Map builder service was null");
+
+GameState? _state = host.Services.GetService<GameState>();
+if (_state == null)
+    throw new NullReferenceException("State machine was null");
+
 
 int playerFood = 10;
 int playerHealth = 100;
 int playerStamina = 20;
 int playerSpeed = 1;
 bool canMove = true;
+MapPoint winLocation = new MapPoint(1, 2);
 
-
-ConsoleColor borderColor = ConsoleColor.DarkBlue;
-ConsoleColor messageColor = ConsoleColor.Cyan;
-
-(int Height, int Width) currentWindoSize = (Console.WindowHeight, Console.WindowWidth);
+(int Height, int Width) currentWindowSize = _screen.GetWindowSize();
 (int Height, int Width) lastKnownWindowSize = (0, 0);
-(int X, int Y) playerLocation = (0, 0);
-(int X, int Y) lastPlayerLocation = (0, 0);
 
+Map map = _mapBuilder.CreateMap(currentWindowSize.Height, currentWindowSize.Width);
 
 
 
@@ -57,88 +66,51 @@ ConsoleColor GetPlayerColor()
         throw new ArgumentOutOfRangeException(nameof(playerHealth));
 }
 
-//Board Items
-
-
-//GUI
-void SetWindowSize() => lastKnownWindowSize = currentWindoSize;
-void CheckWindowSize()
-{
-    if (lastKnownWindowSize != currentWindoSize)
-        Console.SetWindowSize(lastKnownWindowSize.Width, lastKnownWindowSize.Height);
-}
-
-
-void DrawBoard(Map map)
-{
-    if (_screen == null)
-        throw new NullReferenceException("Screen service was null");
-
-    _screen.DrawBorder();
-    _screen.DrawMap(map);
-}
 
 //Logic
 bool CheckWinner()
 {
-    return playerLocation == (1, 2);
+    return map.PlayerPosition == winLocation;
 }
 
-void PlacePlayerAtStart()
-{
-    playerLocation.X = lastKnownWindowSize.Width - 2;
-    playerLocation.Y = lastKnownWindowSize.Height - 2;
-}
+
 void MovePlayer(MovementDirection direction)
 {
-    (int x, int y) newLocation = (0, 0);
-    lastPlayerLocation = newLocation = playerLocation;
+    var newLocation = new MapPoint(map.PlayerPosition.X, map.PlayerPosition.Y); 
 
     switch (direction)
     {
         case MovementDirection.North:
-            DrainStamina(1);
-            newLocation.y--;
+            newLocation.Y--;
             break;
         case MovementDirection.South:
-            DrainStamina(1);
-            newLocation.y++;
+            newLocation.Y++;
             break;
         case MovementDirection.East:
-            DrainStamina(1);
-            newLocation.x++;
+            newLocation.X++;
             break;
         case MovementDirection.West:
-            DrainStamina(1);
-            newLocation.x--;
+            newLocation.X--;
             break;
     }
 
-    if (CheckBounds(newLocation))
+    if (_screen.CheckBounds(newLocation))
     {
-
         DrainStamina(1);
 
-        Console.SetCursorPosition(playerLocation.X, playerLocation.Y);
+        Console.SetCursorPosition(map.PlayerPosition.X, map.PlayerPosition.Y);
         Console.Write(" ");
 
-        playerLocation = newLocation;
+        map.PlayerPosition = newLocation;
 
-        DrawPlayer();
-        ShowPosition();
-        ShowMessage("");
+        _screen.DrawPlayer(newLocation);
+        _screen.ShowMessage($"{newLocation.X},{newLocation.Y}");
     }
     else
     {
         Console.Beep();
-        ShowMessage("At Bounds!");
+        _screen.ShowMessage("At Bounds!");
     }
-}
-void ResetBoard()
-{
-    SpawnFood();
-    SpawnMonsters();
-    PlacePlayerAtStart();
 }
 void IncreaseStamina(int amount) => playerStamina += amount;
 void DrainStamina(int amount) => playerStamina -= amount;
@@ -147,9 +119,10 @@ void DecreaseHP(int amount) => playerHealth -= amount;
 
 //Main
 Console.CursorVisible = false;
-SetWindowSize();
-ResetBoard();
-DrawBoard();
+Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
+map.PlayerPosition.X = _state.Spawn.X;
+map.PlayerPosition.Y = _state.Spawn.Y;
+_screen.DrawMap(map);
 
 while (true)
 {
@@ -189,19 +162,19 @@ while (true)
     if (CheckWinner())
     {
         Console.Beep();
-        ShowMessage("WINNER!");
+        _screen.ShowMessage("WINNER!");
     }
-    if (CheckForFood())
-    {
-        ConsumeFood(food);
-    }
-    if (CheckForMonster())
-    {
-        Console.Beep();
-        Console.Beep();
-        Console.Beep();
-        ShowMessage("MONSTER!");
-    }
+    //if (CheckForFood())
+    //{
+    //    ConsumeFood(food);
+    //}
+    //if (CheckForMonster())
+    //{
+    //    Console.Beep();
+    //    Console.Beep();
+    //    Console.Beep();
+    //    _screen.ShowMessage("MONSTER!");
+    //}
     //CheckForFood(currentPosition);
     //CheckFormonster(currentPosition);
 }

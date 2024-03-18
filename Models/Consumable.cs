@@ -25,7 +25,7 @@ internal abstract class Consumable : IMapItem
             case ConsumableType.Potion:
                 return "Wonder what this could be? Certainly one way to find out";
             case null:
-                throw new ArgumentNullException(nameof(type));
+                return "Mystery";
             default:
                 throw new ArgumentOutOfRangeException(nameof(type));
         }

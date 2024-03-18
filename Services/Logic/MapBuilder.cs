@@ -8,25 +8,22 @@ using TopDownDungeon.Enums;
 using TopDownDungeon.Models;
 using TopDownDungeon.Services.Consumables;
 using TopDownDungeon.Services.Encounters;
+using TopDownDungeon.UI;
 
 namespace TopDownDungeon.Services.Logic;
 internal class MapBuilder
 {
-    private int screenBorderWidth = 1;
-    private int topPadding = 1;
-    private int bottomPadding = 2;
-    private int screenWidth = 0;
-    private int screenHeight = 0;
-
     private List<MapPoint> UsedPoints = [];
     private MapPoint spawn = new MapPoint();
+    private readonly Screen _screen;
 
-    public Task<Map> CreateMap(int height, int width, int meals = 15, int potions = 7, int encounters = 42)
+    public MapBuilder(Screen screen)
     {
-        spawn = new(width - screenBorderWidth, height - bottomPadding);
-        screenHeight = height;
-        screenWidth = width;
+        _screen = screen;
+    }
 
+    internal Map CreateMap(int height, int width, int meals = 15, int potions = 7, int encounters = 42)
+    {
         List<Food> _meals = [];
         List<Potion> _potions = [];
         List<Encounter> _encounters = [];
@@ -37,7 +34,7 @@ internal class MapBuilder
 
         var map = new Map(_meals, _potions, _encounters, height, width);
 
-        return Task.FromResult(map);
+        return map;
     }
     private List<Food> SpawnMapItem(out List<Food> meals, int quantity)
     {
@@ -66,25 +63,17 @@ internal class MapBuilder
     {
         var randomX = new Random();
         var randomY = new Random();
-
         var point = new MapPoint(0, 0);
+        var screenDimensions = _screen.GetWindowSize();
         do
         {
-            point.X = randomX.Next(1, screenWidth);
-            point.Y = randomY.Next(bottomPadding, screenHeight);
+            point.X = randomX.Next(1, screenDimensions.Width);
+            point.Y = randomY.Next(_screen.bottomPadding, screenDimensions.Height);
             if (!UsedPoints.Contains(point))
                 UsedPoints.Add(point);
         }
-        while (!CheckBounds(point) && !UsedPoints.Contains(point));
+        while (!_screen.CheckBounds(point) && !UsedPoints.Contains(point));
 
         return point;
-    }
-    private bool CheckBounds(MapPoint point)
-    {
-        var notSpawn = point != spawn;
-        var checkX = point.X > 0 && point.X < (screenWidth - screenBorderWidth);
-        var checkY = point.Y > 1 && point.Y < (screenHeight - topPadding);
-
-        return notSpawn && checkX && checkY;
     }
 }

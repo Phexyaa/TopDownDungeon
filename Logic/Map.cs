@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TopDownDungeon.Models;
 
-namespace TopDownDungeon.Services.Logic;
+namespace TopDownDungeon.Logic;
 internal class Map
 {
     internal List<Food> Meals { get; set; }

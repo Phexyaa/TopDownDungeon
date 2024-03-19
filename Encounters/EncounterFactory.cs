@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using TopDownDungeon.Data;
 using TopDownDungeon.Models;
 
-namespace TopDownDungeon.Services.Encounters;
+namespace TopDownDungeon.Encounters;
 internal class EncounterFactory
 {
     private static Encounter Create()

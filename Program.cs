@@ -3,19 +3,21 @@ using TopDownDungeon.Enums;
 using System.Drawing;
 using System.Dynamic;
 using System.Reflection.Metadata.Ecma335;
-using TopDownDungeon.UI;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using System.Runtime.CompilerServices;
-using TopDownDungeon.Services.Logic;
 using TopDownDungeon.Models;
 using System;
+using TopDownDungeon.Logic;
+using TopDownDungeon.UI;
+using TopDownDungeon.Audio;
 
 HostApplicationBuilder builder = new HostApplicationBuilder(args);
 
 builder.Services.AddSingleton<GameState>();
 builder.Services.AddSingleton<Screen>();
 builder.Services.AddSingleton<MapBuilder>();
+builder.Services.AddTransient<AudioController>();
 using IHost host = builder.Build();
 
 host.Start();
@@ -32,18 +34,16 @@ GameState? _state = host.Services.GetService<GameState>();
 if (_state == null)
     throw new NullReferenceException("State machine was null");
 
+AudioController? _audio = host.Services.GetService<AudioController>();
+if (_audio == null)
+    throw new NullReferenceException("Sound effect service was null");
 
-int playerFood = 10;
-int playerHealth = 100;
-int playerStamina = 20;
-int playerSpeed = 1;
-bool canMove = true;
+
+
 MapPoint winLocation = new MapPoint(1, 2);
 
-(int Height, int Width) currentWindowSize = _screen.GetWindowSize();
-(int Height, int Width) lastKnownWindowSize = (0, 0);
 
-Map map = _mapBuilder.CreateMap(currentWindowSize.Height, currentWindowSize.Width);
+Map map = _mapBuilder.CreateMap(_screen.GetWindowSize().Height, _screen.GetWindowSize().Width);
 
 
 
@@ -53,27 +53,21 @@ Map map = _mapBuilder.CreateMap(currentWindowSize.Height, currentWindowSize.Widt
 //Utility
 ConsoleColor GetPlayerColor()
 {
-    if (playerHealth > 0 && playerHealth <= 100)
+    if (_state.PlayerHealth > 0 && _state.PlayerHealth <= 100)
     {
-        if (playerHealth > 0 && playerHealth <= 32)
+        if (_state.PlayerHealth > 0 && _state.PlayerHealth <= 32)
             return ConsoleColor.Red;
-        else if (playerHealth > 32 && playerHealth < 65)
+        else if (_state.PlayerHealth > 32 && _state.PlayerHealth < 65)
             return ConsoleColor.Yellow;
         else
             return ConsoleColor.Green;
     }
     else
-        throw new ArgumentOutOfRangeException(nameof(playerHealth));
+        throw new ArgumentOutOfRangeException(nameof(_state.PlayerHealth));
 }
 
 
 //Logic
-bool CheckWinner()
-{
-    return map.PlayerPosition == winLocation;
-}
-
-
 void MovePlayer(MovementDirection direction)
 {
     var newLocation = new MapPoint(map.PlayerPosition.X, map.PlayerPosition.Y); 
@@ -94,25 +88,53 @@ void MovePlayer(MovementDirection direction)
             break;
     }
 
-    if (_screen.CheckBounds(newLocation))
+    if (_screen.CheckMapBounds(newLocation))
     {
         DrainStamina(1);
 
+        _audio.PlayWalkingEffect();
+        _screen.DrawPlayer(newLocation, map.PlayerPosition);
+        _screen.ShowMessage($"{newLocation.X},{newLocation.Y}");
+
         map.PlayerPosition = newLocation;
 
-        _screen.DrawPlayer(newLocation);
-        _screen.ShowMessage($"{newLocation.X},{newLocation.Y}");
+        CheckWinner();
+        CheckForEncounter();
+        //ChekForFood();
     }
     else
     {
-        Console.Beep();
+        _audio.PlayAtBoundaryEffect();
         _screen.ShowMessage("At Bounds!");
     }
 }
-void IncreaseStamina(int amount) => playerStamina += amount;
-void DrainStamina(int amount) => playerStamina -= amount;
-void IncreaseHP(int amount) => playerHealth += amount;
-void DecreaseHP(int amount) => playerHealth -= amount;
+void CheckWinner()
+{
+    if (map.PlayerPosition.X == winLocation.X
+        && map.PlayerPosition.Y == winLocation.Y)
+    {
+        _audio.PlayWinnerEffect();
+        _screen.ShowMessage("WINNER!");
+    }
+}
+void CheckForEncounter()
+{
+    foreach (var encounter in map.Encounters)
+    {
+        var x = encounter.Location;
+        if (encounter.Location.X == map.PlayerPosition.X
+            && encounter.Location.Y == map.PlayerPosition.Y)
+        {
+            _audio.PlayEncounterEffect();
+            _screen.ShowMessage("Encountered enemy; Get ready to fight!");
+        }
+    }
+}
+
+void IncreaseStamina(int amount) => _state.PlayerStamina += amount;
+void DrainStamina(int amount) => _state.PlayerStamina -= amount;
+void IncreaseHP(int amount) => _state.PlayerHealth += amount;
+void DecreaseHP(int amount) => _state.PlayerHealth -= amount;
 
 //Main
 map.PlayerPosition.X = _state.Spawn.X;
@@ -154,11 +176,6 @@ while (true)
             break;
     }
 
-    if (CheckWinner())
-    {
-        Console.Beep();
-        _screen.ShowMessage("WINNER!");
-    }
     //if (CheckForFood())
     //{
     //    ConsumeFood(food);

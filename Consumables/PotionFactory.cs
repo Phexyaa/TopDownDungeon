@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TopDownDungeon.Services.Consumables;
+namespace TopDownDungeon.Consumables;
 internal class PotionFactory
 {
     internal static Potion Create(PotionEffect effect)

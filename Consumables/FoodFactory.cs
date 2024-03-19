@@ -1,7 +1,7 @@
 ﻿using TopDownDungeon.Models;
 using TopDownDungeon.Enums;
 
-namespace TopDownDungeon.Services.Consumables;
+namespace TopDownDungeon.Consumables;
 
 internal class FoodFactory
 {

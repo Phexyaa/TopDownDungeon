@@ -4,13 +4,13 @@ using System.Linq;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using TopDownDungeon.Consumables;
+using TopDownDungeon.Encounters;
 using TopDownDungeon.Enums;
 using TopDownDungeon.Models;
-using TopDownDungeon.Services.Consumables;
-using TopDownDungeon.Services.Encounters;
 using TopDownDungeon.UI;
 
-namespace TopDownDungeon.Services.Logic;
+namespace TopDownDungeon.Logic;
 internal class MapBuilder
 {
     private List<MapPoint> UsedPoints = [];
@@ -67,12 +67,12 @@ internal class MapBuilder
         var screenDimensions = _screen.GetWindowSize();
         do
         {
-            point.X = randomX.Next(1, screenDimensions.Width);
-            point.Y = randomY.Next(_screen.bottomPadding, screenDimensions.Height);
+            point.X = randomX.Next(1, screenDimensions.Width - 1);
+            point.Y = randomY.Next(_screen.bottomPadding, screenDimensions.Height - 1);
             if (!UsedPoints.Contains(point))
                 UsedPoints.Add(point);
         }
-        while (!_screen.CheckBounds(point) && !UsedPoints.Contains(point));
+        while (!_screen.CheckMapBounds(point) && !UsedPoints.Contains(point));
 
         return point;
     }

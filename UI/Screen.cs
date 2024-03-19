@@ -6,13 +6,12 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using TopDownDungeon.Enums;
+using TopDownDungeon.Logic;
 using TopDownDungeon.Models;
-using TopDownDungeon.Services.Logic;
 
 namespace TopDownDungeon.UI;
 internal class Screen
 {
-    private void SetCursorPosition(MapPoint point) => CursorPosition = point;
     private Dictionary<MapSymbol, char> _charMap = new Dictionary<MapSymbol, char>()
     {
         { MapSymbol.BorderHorizontal, '=' },
@@ -23,12 +22,14 @@ internal class Screen
         { MapSymbol.NewEncounter, '!' },
         { MapSymbol.PreviousEncounter, '§' },
     };
-    private int eventDisplayCharWidth = 15;
+    private int eventDisplayCharWidth = 50;
     private readonly GameState _state;
+    private readonly (int height, int width) _originalWindowSize;
 
     internal int borderWidth { get; set; } = 1;
     internal int topPadding { get; set; } = 1;
     internal int bottomPadding = 2;
+    internal ConsoleColor MessageColor { get; set; } = ConsoleColor.White;
     internal ConsoleColor Foreground { get; set; } = ConsoleColor.Green;
     internal ConsoleColor Background { get; set; } = ConsoleColor.Black;
     internal ConsoleColor PlayerColor { get; set; } = ConsoleColor.Cyan;
@@ -41,51 +42,16 @@ internal class Screen
     {
         _state = state;
         _state.SetSpawnPoint(new MapPoint(GetWindowSize().Width - 2, GetWindowSize().Height - bottomPadding));
+        _originalWindowSize = GetWindowSize();
     }
 
-    internal bool CheckBounds(MapPoint point)
+
+    private bool CheckWindowSize()
     {
-        var screenSize = GetWindowSize();
-        var notSpawn = point != _state.Spawn;
-        var checkX = point.X > 0 && point.X < (screenSize.Width - 2);
-        var checkY = point.Y > topPadding && point.Y < (screenSize.Height - bottomPadding);
-
-        return notSpawn && checkX && checkY;
-    }
-    internal (int Width, int Height) GetWindowSize()
-    {
-        return (Console.WindowWidth, Console.WindowHeight);
-    }
-    internal void ShowMessage(string message)
-    {
-        if (message.Length > (GetWindowSize().Width - eventDisplayCharWidth))
-        {
-            message = message.Substring(0, message.Length - eventDisplayCharWidth);
-        }
-
-
-        Console.ForegroundColor = Foreground;
-
-        Console.SetCursorPosition(0, 0);
-        Console.Write(message);
-        Console.Write("".PadRight(GetWindowSize().Width - eventDisplayCharWidth));
-
-        Console.ResetColor();
-    }
-    internal void DrawPlayer(MapPoint location)
-    {
-        Console.ForegroundColor = PlayerColor;
-
-        Console.SetCursorPosition(location.X, location.Y);
-        Console.Write(_charMap[MapSymbol.Player]);
-
-        Console.ResetColor();
-    }
-    internal void DrawPlayer(MapPoint newLocation, MapPoint oldLocation)
-    {
-        Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
-        Console.Write(" ");
-        DrawPlayer(newLocation);
+        if (GetWindowSize() == _originalWindowSize)
+            return true;
+        else
+            return false;
     }
     private void DrawBorder()
     {
@@ -155,6 +121,57 @@ internal class Screen
 
         }
     }
+    private void ResetWindowSize()
+    {
+        Console.SetWindowSize(_originalWindowSize.width, _originalWindowSize.height);
+    }
+
+    internal bool CheckMapBounds(MapPoint point)
+    {
+        var windowSize = GetWindowSize();
+        var notSpawn = point != _state.Spawn;
+        var checkX = point.X > 0 && point.X < windowSize.Width - borderWidth;
+        var checkY = point.Y > topPadding && point.Y < windowSize.Height - 1;
+
+        return notSpawn && checkX && checkY;
+    }
+    internal (int Width, int Height) GetWindowSize()
+    {
+        return (Console.WindowWidth, Console.WindowHeight);
+    }
+    internal void ShowMessage(string message)
+    {
+        if (message.Length > GetWindowSize().Width - eventDisplayCharWidth)
+        {
+            message = message.Substring(0, message.Length - eventDisplayCharWidth);
+        }
+
+
+        Console.ForegroundColor = MessageColor;
+
+        Console.SetCursorPosition(0, 0);
+        Console.Write(message);
+        Console.Write("".PadRight(GetWindowSize().Width - eventDisplayCharWidth));
+
+        Console.ResetColor();
+    }
+    internal void DrawPlayer(MapPoint location)
+    {
+        if (!CheckWindowSize()) { ResetWindowSize(); }
+
+        Console.ForegroundColor = PlayerColor;
+
+        Console.SetCursorPosition(location.X, location.Y);
+        Console.Write(_charMap[MapSymbol.Player]);
+
+        Console.ResetColor();
+    }
+    internal void DrawPlayer(MapPoint newLocation, MapPoint oldLocation)
+    {
+        Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
+        Console.Write(" ");
+        DrawPlayer(newLocation);
+    }
     internal void ShowPosition(MapPoint point)
     {
         Console.ForegroundColor = Foreground;
@@ -174,6 +191,5 @@ internal class Screen
         DrawMapItems(map.Meals);
         DrawMapItems(map.Potions);
         DrawMapItems(map.Encounters);
-        //throw new NotImplementedException();
     }
 }

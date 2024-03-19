@@ -13,7 +13,6 @@ internal class Map
     internal List<Encounter> Encounters { get; set; }
     internal int Height { get; set; }
     internal int Width { get; set; }
-    internal int TESTES = 0;
     internal MapPoint PlayerPosition { get; set; } = new MapPoint();
 
     internal Map(List<Food> food, List<Potion> potions, List<Encounter> encounters, int height = 0, int width = 0)

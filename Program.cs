@@ -16,8 +16,10 @@ HostApplicationBuilder builder = new HostApplicationBuilder(args);
 
 builder.Services.AddSingleton<GameState>();
 builder.Services.AddSingleton<Screen>();
-builder.Services.AddSingleton<MapBuilder>();
+
+builder.Services.AddTransient<MapBuilder>();
 builder.Services.AddTransient<AudioController>();
+builder.Services.AddTransient<BattleEngine>();
 using IHost host = builder.Build();
 
 host.Start();
@@ -38,12 +40,18 @@ AudioController? _audio = host.Services.GetService<AudioController>();
 if (_audio == null)
     throw new NullReferenceException("Sound effect service was null");
 
+BattleEngine? _battleEngine = host.Services.GetService<BattleEngine>();
+if (_battleEngine == null)
+    throw new NullReferenceException("Battle engine was null");
+
 
 
 MapPoint winLocation = new MapPoint(1, 2);
 
 
-Map map = _mapBuilder.CreateMap(_screen.GetWindowSize().Height, _screen.GetWindowSize().Width);
+Map map = CreateNewMap();
+
+
 
 
 
@@ -65,7 +73,10 @@ ConsoleColor GetPlayerColor()
     else
         throw new ArgumentOutOfRangeException(nameof(_state.PlayerHealth));
 }
-
+Map CreateNewMap()
+{
+    return _mapBuilder.CreateMap(_screen.GetWindowSize().Height, _screen.GetWindowSize().Width);
+}
 
 //Logic
 void MovePlayer(MovementDirection direction)
@@ -119,7 +130,7 @@ void CheckWinner()
 }
 void CheckForEncounter()
 {
-    foreach (var encounter in map.Encounters)
+    foreach (var encounter in map.Encounters.ToList())
     {
         var x = encounter.Location;
         if (encounter.Location.X == map.PlayerPosition.X
@@ -127,8 +138,29 @@ void CheckForEncounter()
         {
             _audio.PlayEncounterEffect();
             _screen.ShowMessage("Encountered enemy; Get ready to fight!");
+            HandleEncounter(encounter);
         }
     }
+}
+
+void HandleEncounter(Encounter encounter)
+{
+    var outcome = _battleEngine.StartEncounter(encounter, _state.PlayerHealth);
+
+    if (outcome.Success)
+    {
+        _state.PlayerHealth = outcome.PlayerHP;
+        map.Encounters.Remove(encounter);
+        _screen.DrawMap(map);
+    }
+    else
+    {
+        map = CreateNewMap();
+        map.PlayerPosition.X = _state.Spawn.X;
+        map.PlayerPosition.Y = _state.Spawn.Y;
+        _screen.DrawMap(map);
+    }
+
 }
 
 void IncreaseStamina(int amount) => _state.PlayerStamina += amount;

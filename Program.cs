@@ -105,7 +105,7 @@ void MovePlayer(MovementDirection direction)
 
         _audio.PlayWalkingEffect();
         _screen.DrawPlayer(newLocation, map.PlayerPosition);
-        _screen.ShowMessage($"{newLocation.X},{newLocation.Y}");
+        _screen.ShowMapMessage($"{newLocation.X},{newLocation.Y}");
 
         map.PlayerPosition = newLocation;
 
@@ -116,7 +116,7 @@ void MovePlayer(MovementDirection direction)
     else
     {
         _audio.PlayAtBoundaryEffect();
-        _screen.ShowMessage("At Bounds!");
+        _screen.ShowMapMessage("At Bounds!");
     }
 }
 void CheckWinner()
@@ -125,7 +125,7 @@ void CheckWinner()
         && map.PlayerPosition.Y == winLocation.Y)
     {
         _audio.PlayWinnerEffect();
-        _screen.ShowMessage("WINNER!");
+        _screen.ShowMapMessage("WINNER!");
     }
 }
 void CheckForEncounter()
@@ -137,7 +137,7 @@ void CheckForEncounter()
             && encounter.Location.Y == map.PlayerPosition.Y)
         {
             _audio.PlayEncounterEffect();
-            _screen.ShowMessage("Encountered enemy; Get ready to fight!");
+            _screen.ShowMapMessage("Encountered enemy; Get ready to fight!");
             HandleEncounter(encounter);
         }
     }
@@ -217,7 +217,7 @@ while (true)
     //    Console.Beep();
     //    Console.Beep();
     //    Console.Beep();
-    //    _screen.ShowMessage("MONSTER!");
+    //    _screen.ShowMapMessage("MONSTER!");
     //}
     //CheckForFood(currentPosition);
     //CheckFormonster(currentPosition);

@@ -139,7 +139,7 @@ internal class Screen
     {
         return (Console.WindowWidth, Console.WindowHeight);
     }
-    internal void ShowMessage(string message)
+    internal void ShowMapMessage(string message)
     {
         if (message.Length > GetWindowSize().Width - eventDisplayCharWidth)
         {
@@ -155,6 +155,17 @@ internal class Screen
 
         Console.ResetColor();
     }
+    internal void ShowMessage(string message)
+    {
+        Console.WriteLine(message);
+    }
+    internal void ShowModalMessage(string message)
+    {
+        ShowMessage(message);
+        ShowMessage("Press 'Enter' to continue");
+        Console.ReadLine();
+    }
+    internal void ClearScreen() => Console.Clear();
     internal void DrawPlayer(MapPoint location)
     {
         if (!CheckWindowSize()) { ResetWindowSize(); }
@@ -183,7 +194,7 @@ internal class Screen
     }
     internal void DrawMap(Map map)
     {
-        Console.Clear();
+        ClearScreen();
         Console.CursorVisible = false;
         Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
         DrawBorder();

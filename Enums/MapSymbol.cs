@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TopDownDungeon.Enums;
+﻿namespace TopDownDungeon.Enums;
 internal enum MapSymbol
 {
     BorderHorizontal,
@@ -14,4 +8,5 @@ internal enum MapSymbol
     Potion,
     NewEncounter,
     PreviousEncounter,
+    PreviousLocation,
 }

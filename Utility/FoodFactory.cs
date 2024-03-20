@@ -1,11 +1,11 @@
 ﻿using TopDownDungeon.Models;
 using TopDownDungeon.Enums;
 
-namespace TopDownDungeon.Consumables;
+namespace TopDownDungeon.Utility;
 
 internal class FoodFactory
 {
-    private static Food Create(FoodType foodType)
+    private Food Create(FoodType foodType)
     {
         var food = new Food("Nothing");
         switch (foodType)
@@ -33,7 +33,7 @@ internal class FoodFactory
         return food;
     }
 
-    public static List<Food> Create(int quantity)
+    public List<Food> Create(int quantity)
     {
         var foods = new List<Food>();
         var foodNames = Enum.GetNames(typeof(FoodType)).ToList();

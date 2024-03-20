@@ -1,25 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Threading.Tasks;
-using TopDownDungeon.Consumables;
-using TopDownDungeon.Encounters;
-using TopDownDungeon.Enums;
+﻿using TopDownDungeon.Logic;
 using TopDownDungeon.Models;
 using TopDownDungeon.UI;
 
-namespace TopDownDungeon.Logic;
-internal class MapBuilder
+namespace TopDownDungeon.Utility;
+internal class MapFactory
 {
     private List<MapPoint> UsedPoints = [];
     private MapPoint spawn = new MapPoint();
     private readonly Screen _screen;
+    private readonly EncounterFactory _encounterFactory;
+    private readonly FoodFactory _foodFactory;
+    private readonly PotionFactory _potionFactory;
 
-    public MapBuilder(Screen screen)
+    public MapFactory(Screen screen, EncounterFactory encounterFactory, FoodFactory foodFactory, PotionFactory potionFactory)
     {
         _screen = screen;
+        _encounterFactory = encounterFactory;
+        _foodFactory = foodFactory;
+        _potionFactory = potionFactory;
     }
 
     internal Map CreateMap(int height, int width, int meals = 15, int potions = 7, int encounters = 42)
@@ -38,21 +36,21 @@ internal class MapBuilder
     }
     private List<Food> SpawnMapItem(out List<Food> meals, int quantity)
     {
-        meals = FoodFactory.Create(quantity);
+        meals = _foodFactory.Create(quantity);
         foreach (var meal in meals)
             meal.Location = GenerateRandomPoint();
         return meals;
     }
     private List<Potion> SpawnMapItem(out List<Potion> potions, int quantity)
     {
-        potions = PotionFactory.Create(quantity);
+        potions = _potionFactory.Create(quantity);
         foreach (var potion in potions)
             potion.Location = GenerateRandomPoint();
         return potions;
     }
     private List<Encounter> SpawnMapItem(out List<Encounter> encounters, int quantity)
     {
-        encounters = EncounterFactory.Create(quantity);
+        encounters = _encounterFactory.Create(quantity);
         foreach (var encounter in encounters)
             encounter.Location = GenerateRandomPoint();
         return encounters;
@@ -72,7 +70,9 @@ internal class MapBuilder
             if (!UsedPoints.Contains(point))
                 UsedPoints.Add(point);
         }
-        while (!_screen.CheckMapBounds(point) && !UsedPoints.Contains(point));
+        while (!_screen.CheckMapBounds(point)
+            && !_screen.CheckForSpawnOverlap(point)
+            && !UsedPoints.Contains(point));
 
         return point;
     }

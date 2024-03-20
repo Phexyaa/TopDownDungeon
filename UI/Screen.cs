@@ -1,11 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics.Eventing.Reader;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using TopDownDungeon.Enums;
+﻿using TopDownDungeon.Enums;
 using TopDownDungeon.Logic;
 using TopDownDungeon.Models;
 
@@ -21,6 +14,7 @@ internal class Screen
         { MapSymbol.Potion, '&' },
         { MapSymbol.NewEncounter, '!' },
         { MapSymbol.PreviousEncounter, '§' },
+        { MapSymbol.PreviousLocation, '+' },
     };
     private int eventDisplayCharWidth = 50;
     private readonly GameState _state;
@@ -36,6 +30,8 @@ internal class Screen
     internal ConsoleColor FoodColor { get; set; } = ConsoleColor.Yellow;
     internal ConsoleColor PotionColor { get; set; } = ConsoleColor.Yellow;
     internal ConsoleColor EncounterColor { get; set; } = ConsoleColor.Red;
+    internal ConsoleColor PreviousEncounterColor { get; set; } = ConsoleColor.Magenta;
+    internal ConsoleColor PreviousLocationColor { get; set; } = ConsoleColor.Gray;
     internal MapPoint CursorPosition { get; set; } = new MapPoint(0, 0);
 
     public Screen(GameState state)
@@ -125,15 +121,17 @@ internal class Screen
     {
         Console.SetWindowSize(_originalWindowSize.width, _originalWindowSize.height);
     }
-
+    internal bool CheckForSpawnOverlap(MapPoint point)
+    {
+        return (point.X != _state.Spawn.X && point.Y != _state.Spawn.Y);
+    }
     internal bool CheckMapBounds(MapPoint point)
     {
         var windowSize = GetWindowSize();
-        var notSpawn = point != _state.Spawn;
         var checkX = point.X > 0 && point.X < windowSize.Width - borderWidth;
         var checkY = point.Y > topPadding && point.Y < windowSize.Height - 1;
 
-        return notSpawn && checkX && checkY;
+        return checkX && checkY;
     }
     internal (int Width, int Height) GetWindowSize()
     {
@@ -166,7 +164,7 @@ internal class Screen
         Console.ReadLine();
     }
     internal void ClearScreen() => Console.Clear();
-    internal void DrawPlayer(MapPoint location)
+    internal void DrawPlayerSprite(MapPoint location)
     {
         if (!CheckWindowSize()) { ResetWindowSize(); }
 
@@ -177,11 +175,19 @@ internal class Screen
 
         Console.ResetColor();
     }
-    internal void DrawPlayer(MapPoint newLocation, MapPoint oldLocation)
+    internal void MovePlayerSprite(MapPoint newLocation, MapPoint oldLocation, bool leavingEnounter = false)
     {
         Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
-        Console.Write(" ");
-        DrawPlayer(newLocation);
+        
+        DrawPlayerSprite(newLocation);
+
+        if (leavingEnounter)
+            MarkVisitedEncounter(oldLocation);
+        else
+            MarkVisitedLocation(oldLocation);
+
+
+        Console.ResetColor();
     }
     internal void ShowPosition(MapPoint point)
     {
@@ -195,12 +201,43 @@ internal class Screen
     internal void DrawMap(Map map)
     {
         ClearScreen();
+
         Console.CursorVisible = false;
         Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
+
         DrawBorder();
-        DrawPlayer(map.PlayerPosition);
+        DrawPlayerSprite(_state.PlayerPosition);
         DrawMapItems(map.Meals);
         DrawMapItems(map.Potions);
         DrawMapItems(map.Encounters);
+
+        MarkVisitedLocation(_state.VisitedLocations);
+    }
+
+    private void MarkVisitedLocation(List<MapPoint> visitedLocations)
+    {
+        foreach (var point in visitedLocations)
+            MarkVisitedLocation(point);
+    }
+    private void MarkVisitedLocation(MapPoint point)
+    {
+        if (point.X == _state.PlayerPosition.X && point.Y == _state.PlayerPosition.Y)
+        {
+            return;
+        }
+        else
+        {
+            Console.SetCursorPosition(point.X, point.Y);
+
+            Console.ForegroundColor = PreviousLocationColor;
+            Console.Write(_charMap[MapSymbol.PreviousLocation]);
+        }        
+    }
+    private void MarkVisitedEncounter(MapPoint point)
+    {
+        Console.SetCursorPosition(point.X, point.Y);
+
+        Console.ForegroundColor = PreviousEncounterColor;
+        Console.Write(_charMap[MapSymbol.PreviousEncounter]);
     }
 }

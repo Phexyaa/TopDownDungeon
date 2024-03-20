@@ -1,15 +1,10 @@
 ﻿using TopDownDungeon.Enums;
 using TopDownDungeon.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace TopDownDungeon.Consumables;
+namespace TopDownDungeon.Utility;
 internal class PotionFactory
 {
-    internal static Potion Create(PotionEffect effect)
+    internal Potion Create(PotionEffect effect)
     {
         var potion = new Potion { Effect = effect };
         var helpValue = new Random().Next(0, 8);
@@ -52,7 +47,7 @@ internal class PotionFactory
         return potion;
     }
 
-    public static List<Potion> Create(int quantity)
+    public List<Potion> Create(int quantity)
     {
         var potions = new List<Potion>();
         var effects = Enum.GetNames(typeof(PotionEffect)).ToList();

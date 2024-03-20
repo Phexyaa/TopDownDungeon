@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TopDownDungeon.Models;
+﻿namespace TopDownDungeon.Models;
 internal class MapPoint
 {
     public int X { get; set; }

@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace TopDownDungeon.Models;
+﻿namespace TopDownDungeon.Models;
 internal class Npc
 {
     public string Name { get; }
-    public string? Description { get; set; }
-    public int HealthPoints => new Random().Next(15, 70);
+    public bool IsAggressive { get; set; } = true;
+    public int HealthPoints => new Random().Next(15, 100);
 
-    public Npc(string name) => Name = name;
+    public Npc(string name, bool temperment)
+    {
+        Name = name;
+        IsAggressive = temperment;
+    }
 }

@@ -1,5 +1,4 @@
-﻿using System.Data.Common;
-using TopDownDungeon.Enums;
+﻿using TopDownDungeon.Enums;
 
 namespace TopDownDungeon.Models;
 

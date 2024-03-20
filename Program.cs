@@ -19,6 +19,7 @@ builder.Services.AddTransient<BattleEngine>();
 builder.Services.AddTransient<EncounterFactory>();
 builder.Services.AddTransient<FoodFactory>();
 builder.Services.AddTransient<PotionFactory>();
+builder.Services.AddTransient<InterfaceDefaults>();
 
 using IHost host = builder.Build();
 host.Start();
@@ -80,7 +81,7 @@ Map CreateNewMap()
 //Logic
 void MovePlayer(MovementDirection direction)
 {
-    var newLocation = new MapPoint(_state.PlayerPosition.X, _state.PlayerPosition.Y); 
+    var newLocation = new MapPoint(_state.PlayerLocation.X, _state.PlayerLocation.Y); 
 
     switch (direction)
     {
@@ -104,18 +105,17 @@ void MovePlayer(MovementDirection direction)
 
         _audio.PlayWalkingEffect();
 
-        var oldLocation = _state.PlayerPosition;
-        _state.PlayerPosition = newLocation;
+        var oldLocation = _state.PlayerLocation;
+        _state.PlayerLocation = newLocation;
         _state.VisitedLocations.Add(newLocation);
 
         _screen.MovePlayerSprite(newLocation, oldLocation);
-        _screen.ShowMapMessage($"{newLocation.X},{newLocation.Y}");
 
 
         CheckWinner();
         CheckForEncounter();
         //ChekForFood();
-
+        _screen.UpdateHud();
     }
     else
     {
@@ -125,8 +125,8 @@ void MovePlayer(MovementDirection direction)
 }
 void CheckWinner()
 {
-    if (_state.PlayerPosition.X == winLocation.X
-        && _state.PlayerPosition.Y == winLocation.Y)
+    if (_state.PlayerLocation.X == winLocation.X
+        && _state.PlayerLocation.Y == winLocation.Y)
     {
         _audio.PlayWinnerEffect();
         _screen.ShowMapMessage("WINNER!");
@@ -137,8 +137,8 @@ void CheckForEncounter()
     foreach (var encounter in map.Encounters.ToList())
     {
         var x = encounter.Location;
-        if (encounter.Location.X == _state.PlayerPosition.X
-            && encounter.Location.Y == _state.PlayerPosition.Y)
+        if (encounter.Location.X == _state.PlayerLocation.X
+            && encounter.Location.Y == _state.PlayerLocation.Y)
         {
             _audio.PlayEncounterEffect();
             _screen.ShowMapMessage($"Encountered {encounter.Opponent.Name}. ; Get ready to fight!");
@@ -160,8 +160,8 @@ void HandleEncounter(Encounter encounter)
     else
     {
         map = CreateNewMap();
-        _state.PlayerPosition.X = _state.Spawn.X;
-        _state.PlayerPosition.Y = _state.Spawn.Y;
+        _state.PlayerLocation.X = _state.Spawn.X;
+        _state.PlayerLocation.Y = _state.Spawn.Y;
 
         _state.ResetState();
         _screen.DrawMap(map);
@@ -175,8 +175,8 @@ void IncreaseHP(int amount) => _state.PlayerHealth += amount;
 void DecreaseHP(int amount) => _state.PlayerHealth -= amount;
 
 //Main
-_state.PlayerPosition.X = _state.Spawn.X;
-_state.PlayerPosition.Y = _state.Spawn.Y;
+_state.PlayerLocation.X = _state.Spawn.X;
+_state.PlayerLocation.Y = _state.Spawn.Y;
 _screen.DrawMap(map);
 
 while (true)

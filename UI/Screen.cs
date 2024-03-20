@@ -1,47 +1,35 @@
-﻿using TopDownDungeon.Enums;
+﻿using System.Net.NetworkInformation;
+using TopDownDungeon.Enums;
 using TopDownDungeon.Logic;
 using TopDownDungeon.Models;
+using TopDownDungeon.Utility;
 
 namespace TopDownDungeon.UI;
 internal class Screen
 {
-    private Dictionary<MapSymbol, char> _charMap = new Dictionary<MapSymbol, char>()
-    {
-        { MapSymbol.BorderHorizontal, '=' },
-        { MapSymbol.BorderVertical, '|' },
-        { MapSymbol.Player, 'H' },
-        { MapSymbol.Food, '@' },
-        { MapSymbol.Potion, '&' },
-        { MapSymbol.NewEncounter, '!' },
-        { MapSymbol.PreviousEncounter, '§' },
-        { MapSymbol.PreviousLocation, '+' },
-    };
-    private int eventDisplayCharWidth = 50;
     private readonly GameState _state;
+    private readonly InterfaceDefaults _defaults;
+
+    private int eventDisplayCharWidth = 50;
     private readonly (int height, int width) _originalWindowSize;
+    private int borderWidth = 1;
+    private int topPadding = 1;
+    private int bottomPadding = 2;
+    private int bottomBufferRow => (GetWindowSize().Height - 1);
 
-    internal int borderWidth { get; set; } = 1;
-    internal int topPadding { get; set; } = 1;
-    internal int bottomPadding = 2;
-    internal ConsoleColor MessageColor { get; set; } = ConsoleColor.White;
-    internal ConsoleColor Foreground { get; set; } = ConsoleColor.Green;
-    internal ConsoleColor Background { get; set; } = ConsoleColor.Black;
-    internal ConsoleColor PlayerColor { get; set; } = ConsoleColor.Cyan;
-    internal ConsoleColor FoodColor { get; set; } = ConsoleColor.Yellow;
-    internal ConsoleColor PotionColor { get; set; } = ConsoleColor.Yellow;
-    internal ConsoleColor EncounterColor { get; set; } = ConsoleColor.Red;
-    internal ConsoleColor PreviousEncounterColor { get; set; } = ConsoleColor.Magenta;
-    internal ConsoleColor PreviousLocationColor { get; set; } = ConsoleColor.Gray;
-    internal MapPoint CursorPosition { get; set; } = new MapPoint(0, 0);
-
-    public Screen(GameState state)
+    public Screen(GameState state, InterfaceDefaults defaults)
     {
         _state = state;
-        _state.SetSpawnPoint(new MapPoint(GetWindowSize().Width - 2, GetWindowSize().Height - bottomPadding));
+        _state.SetSpawnPoint(new MapPoint(GetWindowSize().Width - 2, GetWindowSize().Height - 3));
+        _defaults = defaults;
         _originalWindowSize = GetWindowSize();
     }
 
-
+    //Window Utility Methods
+    internal (int Width, int Height) GetWindowSize()
+    {
+        return (Console.WindowWidth, Console.WindowHeight);
+    }
     private bool CheckWindowSize()
     {
         if (GetWindowSize() == _originalWindowSize)
@@ -49,27 +37,99 @@ internal class Screen
         else
             return false;
     }
+    private void ResetWindowSize()
+    {
+        Console.SetWindowSize(_originalWindowSize.width, _originalWindowSize.height);
+    }
+
+    //Message and Heads Up Display Methods
+    internal void ShowMessage(string message)
+    {
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
+        Console.WriteLine(message);
+        Console.ResetColor();
+    }
+    internal void ShowModalMessage(string message)
+    {
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
+        ShowMessage(message);
+        ShowMessage("Press 'Enter' to continue");
+        Console.ReadLine();
+        Console.ResetColor();
+    }
+    internal void ShowMapMessage(string message)
+    {
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
+        Console.SetCursorPosition(0, bottomBufferRow);
+        Console.Write(message);
+        Console.Write("".PadRight(GetWindowSize().Width - eventDisplayCharWidth));
+        Console.ResetColor();
+    }
+    internal void UpdateHud()
+    {
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
+        Console.SetCursorPosition(0, 0);
+        Console.Write($"Health: {_state.PlayerHealth}, Stamina: {_state.PlayerStamina}, Location: {_state.PlayerLocation.X},{_state.PlayerLocation.Y}"
+            .PadRight(GetWindowSize().Width, ' '));
+        Console.ResetColor();
+    }
+
+    //Map Utility Methods
+    internal bool CheckMapBounds(MapPoint point)
+    {
+        var windowSize = GetWindowSize();
+        var checkX = point.X > 0 && point.X < windowSize.Width - borderWidth;
+        var checkY = point.Y > topPadding && point.Y < windowSize.Height - bottomPadding;
+
+        return checkX && checkY;
+    }
+    internal bool CheckForSpawnOverlap(MapPoint point)
+    {
+        return (point.X != _state.Spawn.X && point.Y != _state.Spawn.Y);
+    }
+    internal void ClearScreen() => Console.Clear();
+    internal void DrawPlayerSprite(MapPoint location)
+    {
+        if (!CheckWindowSize()) { ResetWindowSize(); }
+
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.PlayerColor];
+
+        Console.SetCursorPosition(location.X, location.Y);
+        Console.Write(_defaults.SpriteMape[MapSymbol.Player]);
+
+        Console.ResetColor();
+    }
+    internal void MovePlayerSprite(MapPoint newLocation, MapPoint oldLocation)
+    {
+        Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
+
+        DrawPlayerSprite(newLocation);
+        MarkVisitedLocation(oldLocation);
+
+        Console.ResetColor();
+    }
+
+    //Map Painting Methods
     private void DrawBorder()
     {
-        Console.ForegroundColor = Foreground;
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.Foreground];
 
         Console.SetCursorPosition(0, 1);
-        Console.Write("".PadRight(GetWindowSize().Width, _charMap[MapSymbol.BorderHorizontal]));
+        Console.Write("".PadRight(GetWindowSize().Width, _defaults.SpriteMape[MapSymbol.BorderHorizontal]));
 
-        for (int i = 2; i < GetWindowSize().Height; i++)
+        for (int i = 2; i < (GetWindowSize().Height - 2); i++)
         {
             Console.SetCursorPosition(0, i);
-            Console.Write(_charMap[MapSymbol.BorderVertical]);
+            Console.Write(_defaults.SpriteMape[MapSymbol.BorderVertical]);
         }
-        for (int i = 2; i < GetWindowSize().Height; i++)
+        for (int i = 2; i < (GetWindowSize().Height - 2); i++)
         {
             Console.SetCursorPosition(GetWindowSize().Width - 1, i);
-            Console.Write(_charMap[MapSymbol.BorderVertical]);
+            Console.Write(_defaults.SpriteMape[MapSymbol.BorderVertical]);
         }
 
-        Console.SetCursorPosition(0, GetWindowSize().Height - 1);
-        Console.Write("".PadRight(GetWindowSize().Width, _charMap[MapSymbol.BorderHorizontal]));
-
+        Console.SetCursorPosition(0, GetWindowSize().Height - 2);
+        Console.Write("".PadRight(GetWindowSize().Width, _defaults.SpriteMape[MapSymbol.BorderHorizontal]));
         Console.ResetColor();
     }
     private void DrawMapItems(List<Food> meals)
@@ -79,8 +139,8 @@ internal class Screen
             for (int i = 0; i < meals.Count; i++)
             {
                 Console.SetCursorPosition(meal.Location.X, meal.Location.Y);
-                Console.ForegroundColor = FoodColor;
-                Console.Write(_charMap[MapSymbol.Food]);
+                Console.ForegroundColor = _defaults.DisplayColors[GameColor.FoodColor];
+                Console.Write(_defaults.SpriteMape[MapSymbol.Food]);
 
                 Console.ResetColor();
             }
@@ -93,8 +153,8 @@ internal class Screen
             for (int i = 0; i < potions.Count; i++)
             {
                 Console.SetCursorPosition(potion.Location.X, potion.Location.Y);
-                Console.ForegroundColor = PotionColor;
-                Console.Write(_charMap[MapSymbol.Potion]);
+                Console.ForegroundColor = _defaults.DisplayColors[GameColor.PotionColor];
+                Console.Write(_defaults.SpriteMape[MapSymbol.Potion]);
 
                 Console.ResetColor();
             }
@@ -106,97 +166,16 @@ internal class Screen
         {
             Console.SetCursorPosition(encounter.Location.X, encounter.Location.Y);
 
-            Console.ForegroundColor = EncounterColor;
+            Console.ForegroundColor = _defaults.DisplayColors[GameColor.EncounterColor];
 
             if (encounter.PreviouslyVisited)
-                Console.Write(_charMap[MapSymbol.PreviousEncounter]);
+                Console.Write(_defaults.SpriteMape[MapSymbol.PreviousEncounter]);
             else
-                Console.Write(_charMap[MapSymbol.NewEncounter]);
+                Console.Write(_defaults.SpriteMape[MapSymbol.NewEncounter]);
 
             Console.ResetColor();
 
         }
-    }
-    private void ResetWindowSize()
-    {
-        Console.SetWindowSize(_originalWindowSize.width, _originalWindowSize.height);
-    }
-    internal bool CheckForSpawnOverlap(MapPoint point)
-    {
-        return (point.X != _state.Spawn.X && point.Y != _state.Spawn.Y);
-    }
-    internal bool CheckMapBounds(MapPoint point)
-    {
-        var windowSize = GetWindowSize();
-        var checkX = point.X > 0 && point.X < windowSize.Width - borderWidth;
-        var checkY = point.Y > topPadding && point.Y < windowSize.Height - 1;
-
-        return checkX && checkY;
-    }
-    internal (int Width, int Height) GetWindowSize()
-    {
-        return (Console.WindowWidth, Console.WindowHeight);
-    }
-    internal void ShowMapMessage(string message)
-    {
-        if (message.Length > GetWindowSize().Width - eventDisplayCharWidth)
-        {
-            message = message.Substring(0, message.Length - eventDisplayCharWidth);
-        }
-
-
-        Console.ForegroundColor = MessageColor;
-
-        Console.SetCursorPosition(0, 0);
-        Console.Write(message);
-        Console.Write("".PadRight(GetWindowSize().Width - eventDisplayCharWidth));
-
-        Console.ResetColor();
-    }
-    internal void ShowMessage(string message)
-    {
-        Console.WriteLine(message);
-    }
-    internal void ShowModalMessage(string message)
-    {
-        ShowMessage(message);
-        ShowMessage("Press 'Enter' to continue");
-        Console.ReadLine();
-    }
-    internal void ClearScreen() => Console.Clear();
-    internal void DrawPlayerSprite(MapPoint location)
-    {
-        if (!CheckWindowSize()) { ResetWindowSize(); }
-
-        Console.ForegroundColor = PlayerColor;
-
-        Console.SetCursorPosition(location.X, location.Y);
-        Console.Write(_charMap[MapSymbol.Player]);
-
-        Console.ResetColor();
-    }
-    internal void MovePlayerSprite(MapPoint newLocation, MapPoint oldLocation, bool leavingEnounter = false)
-    {
-        Console.SetCursorPosition(oldLocation.X, oldLocation.Y);
-        
-        DrawPlayerSprite(newLocation);
-
-        if (leavingEnounter)
-            MarkVisitedEncounter(oldLocation);
-        else
-            MarkVisitedLocation(oldLocation);
-
-
-        Console.ResetColor();
-    }
-    internal void ShowPosition(MapPoint point)
-    {
-        Console.ForegroundColor = Foreground;
-
-        Console.SetCursorPosition(GetWindowSize().Width - 15, 0);
-        Console.Write($"({point.X}, {point.Y})");
-
-        Console.ResetColor();
     }
     internal void DrawMap(Map map)
     {
@@ -206,12 +185,21 @@ internal class Screen
         Console.SetCursorPosition(_state.Spawn.X, _state.Spawn.Y);
 
         DrawBorder();
-        DrawPlayerSprite(_state.PlayerPosition);
+        DrawPlayerSprite(_state.PlayerLocation);
         DrawMapItems(map.Meals);
         DrawMapItems(map.Potions);
         DrawMapItems(map.Encounters);
-
+        DrawWinLocation();
+        UpdateHud();
         MarkVisitedLocation(_state.VisitedLocations);
+    }
+
+    private void DrawWinLocation()
+    {
+        Console.ForegroundColor = _defaults.DisplayColors[GameColor.ExitMarker];
+        Console.SetCursorPosition(1, 2);
+        Console.Write(_defaults.SpriteMape[MapSymbol.Exit]);
+        Console.ResetColor();
     }
 
     private void MarkVisitedLocation(List<MapPoint> visitedLocations)
@@ -221,7 +209,7 @@ internal class Screen
     }
     private void MarkVisitedLocation(MapPoint point)
     {
-        if (point.X == _state.PlayerPosition.X && point.Y == _state.PlayerPosition.Y)
+        if (point.X == _state.PlayerLocation.X && point.Y == _state.PlayerLocation.Y)
         {
             return;
         }
@@ -229,15 +217,8 @@ internal class Screen
         {
             Console.SetCursorPosition(point.X, point.Y);
 
-            Console.ForegroundColor = PreviousLocationColor;
-            Console.Write(_charMap[MapSymbol.PreviousLocation]);
-        }        
-    }
-    private void MarkVisitedEncounter(MapPoint point)
-    {
-        Console.SetCursorPosition(point.X, point.Y);
-
-        Console.ForegroundColor = PreviousEncounterColor;
-        Console.Write(_charMap[MapSymbol.PreviousEncounter]);
+            Console.ForegroundColor = _defaults.DisplayColors[GameColor.PreviousLocationColor];
+            Console.Write(_defaults.SpriteMape[MapSymbol.PreviousLocation]);
+        }
     }
 }

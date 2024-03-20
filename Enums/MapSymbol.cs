@@ -9,4 +9,5 @@ internal enum MapSymbol
     NewEncounter,
     PreviousEncounter,
     PreviousLocation,
+    Exit,
 }

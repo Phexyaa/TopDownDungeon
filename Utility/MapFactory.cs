@@ -63,16 +63,15 @@ internal class MapFactory
         var randomY = new Random();
         var point = new MapPoint(0, 0);
         var screenDimensions = _screen.GetWindowSize();
-        do
+        while (!_screen.CheckMapBounds(point)
+            || !_screen.CheckForSpawnOverlap(point)
+            || !UsedPoints.Contains(point))
         {
             point.X = randomX.Next(1, screenDimensions.Width - 1);
-            point.Y = randomY.Next(_screen.bottomPadding, screenDimensions.Height - 1);
+            point.Y = randomY.Next(1, screenDimensions.Height - 1);
             if (!UsedPoints.Contains(point))
                 UsedPoints.Add(point);
-        }
-        while (!_screen.CheckMapBounds(point)
-            && !_screen.CheckForSpawnOverlap(point)
-            && !UsedPoints.Contains(point));
+        };
 
         return point;
     }

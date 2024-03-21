@@ -5,19 +5,18 @@ using TopDownDungeon.Models;
 using TopDownDungeon.Utility;
 
 namespace TopDownDungeon.UI;
-internal class Screen
+internal class Canvas
 {
     private readonly GameState _state;
     private readonly InterfaceDefaults _defaults;
 
-    private int eventDisplayCharWidth = 50;
     private readonly (int height, int width) _originalWindowSize;
     private int borderWidth = 1;
     private int topPadding = 1;
     private int bottomPadding = 2;
     private int bottomBufferRow => (GetWindowSize().Height - 1);
 
-    public Screen(GameState state, InterfaceDefaults defaults)
+    public Canvas(GameState state, InterfaceDefaults defaults)
     {
         _state = state;
         _state.SetSpawnPoint(new MapPoint(GetWindowSize().Width - 2, GetWindowSize().Height - 3));
@@ -61,8 +60,7 @@ internal class Screen
     {
         Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
         Console.SetCursorPosition(0, bottomBufferRow);
-        Console.Write(message);
-        Console.Write("".PadRight(GetWindowSize().Width - eventDisplayCharWidth));
+        Console.Write(message.PadRight(GetWindowSize().Width));
         Console.ResetColor();
     }
     internal void UpdateHud()
@@ -70,7 +68,7 @@ internal class Screen
         Console.ForegroundColor = _defaults.DisplayColors[GameColor.MessageColor];
         Console.SetCursorPosition(0, 0);
         Console.Write($"Health: {_state.PlayerHealth}, Stamina: {_state.PlayerStamina}, Location: {_state.PlayerLocation.X},{_state.PlayerLocation.Y}"
-            .PadRight(GetWindowSize().Width, ' '));
+            .PadRight(GetWindowSize().Width));
         Console.ResetColor();
     }
 

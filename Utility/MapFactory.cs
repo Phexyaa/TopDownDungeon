@@ -7,12 +7,12 @@ internal class MapFactory
 {
     private List<MapPoint> UsedPoints = [];
     private MapPoint spawn = new MapPoint();
-    private readonly Screen _screen;
+    private readonly Canvas _screen;
     private readonly EncounterFactory _encounterFactory;
     private readonly FoodFactory _foodFactory;
     private readonly PotionFactory _potionFactory;
 
-    public MapFactory(Screen screen, EncounterFactory encounterFactory, FoodFactory foodFactory, PotionFactory potionFactory)
+    public MapFactory(Canvas screen, EncounterFactory encounterFactory, FoodFactory foodFactory, PotionFactory potionFactory)
     {
         _screen = screen;
         _encounterFactory = encounterFactory;

@@ -11,9 +11,9 @@ internal class BattleEngine
     private int minDamage = 5;
     private int maxDamage = 35;
     private char loadingWidgetChar;
-    private readonly Screen _screen;
+    private readonly Canvas _screen;
 
-    public BattleEngine(Screen screen)
+    public BattleEngine(Canvas screen)
     {
         _screen = screen;
     }

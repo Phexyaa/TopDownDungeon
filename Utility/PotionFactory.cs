@@ -7,37 +7,36 @@ internal class PotionFactory
     internal Potion Create(PotionEffect effect)
     {
         var potion = new Potion { Effect = effect };
-        var helpValue = new Random().Next(0, 8);
-        var hurtValue = helpValue * -1;
+        var effectValue = new Random().Next(0, 8);
 
         switch (effect)
         {
             case PotionEffect.Heal:
-                potion.EffectValue = helpValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = false;
                 break;
             case PotionEffect.Harm:
-                potion.EffectValue = hurtValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = true;
                 break;
             case PotionEffect.Poison:
-                potion.EffectValue = hurtValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = true;
                 break;
             case PotionEffect.Invigorate:
-                potion.EffectValue = helpValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = false;
                 break;
             case PotionEffect.Drunken:
-                potion.EffectValue = hurtValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = true;
                 break;
             case PotionEffect.Slow:
-                potion.EffectValue = hurtValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = true;
                 break;
             case PotionEffect.Speed:
-                potion.EffectValue = helpValue;
+                potion.EffectValue = effectValue;
                 potion.IsHarmful = false;
                 break;
             default:

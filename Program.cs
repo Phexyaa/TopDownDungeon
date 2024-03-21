@@ -1,5 +1,4 @@
-﻿
-using TopDownDungeon.Enums;
+﻿using TopDownDungeon.Enums;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using TopDownDungeon.Models;
@@ -7,11 +6,13 @@ using TopDownDungeon.Logic;
 using TopDownDungeon.UI;
 using TopDownDungeon.Audio;
 using TopDownDungeon.Utility;
+using System.Diagnostics.Metrics;
+using System.ComponentModel.DataAnnotations;
 
 HostApplicationBuilder builder = new HostApplicationBuilder(args);
 
 builder.Services.AddSingleton<GameState>();
-builder.Services.AddSingleton<Screen>();
+builder.Services.AddSingleton<Canvas>();
 
 builder.Services.AddTransient<MapFactory>();
 builder.Services.AddTransient<AudioController>();
@@ -24,7 +25,8 @@ builder.Services.AddTransient<InterfaceDefaults>();
 using IHost host = builder.Build();
 host.Start();
 
-Screen? _screen = host.Services.GetService<Screen>();
+//Services
+Canvas? _screen = host.Services.GetService<Canvas>();
 if (_screen == null)
     throw new NullReferenceException("Screen service was null");
 
@@ -44,19 +46,15 @@ BattleEngine? _battleEngine = host.Services.GetService<BattleEngine>();
 if (_battleEngine == null)
     throw new NullReferenceException("Battle engine was null");
 
+//Game Defaults
+const int PlayerHealth = 100;
+const int PlayerStamina = 20;
+const int PlayerSpeed = 1;
+const bool CanMove = true;
 
-
+//Variables
 MapPoint winLocation = new MapPoint(1, 2);
-
-
 Map map = CreateNewMap();
-
-
-
-
-
-
-
 
 //Utility
 ConsoleColor GetPlayerColor()
@@ -81,7 +79,7 @@ Map CreateNewMap()
 //Logic
 void MovePlayer(MovementDirection direction)
 {
-    var newLocation = new MapPoint(_state.PlayerLocation.X, _state.PlayerLocation.Y); 
+    var newLocation = new MapPoint(_state.PlayerLocation.X, _state.PlayerLocation.Y);
 
     switch (direction)
     {
@@ -111,44 +109,130 @@ void MovePlayer(MovementDirection direction)
 
         _screen.MovePlayerSprite(newLocation, oldLocation);
 
-
-        CheckWinner();
-        CheckForEncounter();
-        //ChekForFood();
-        _screen.UpdateHud();
+        ExamineNewLocation();
     }
     else
     {
         _audio.PlayAtBoundaryEffect();
         _screen.ShowMapMessage("At Bounds!");
     }
+
+    _screen.UpdateHud();
 }
-void CheckWinner()
+
+void ExamineNewLocation()
 {
-    if (_state.PlayerLocation.X == winLocation.X
-        && _state.PlayerLocation.Y == winLocation.Y)
+    if (CheckForWinState())
+        HandleWinState();
+
+    var encounterCheck = CheckForEncounter();
+    if (encounterCheck.IsEncounter && encounterCheck.Encounter != null)
+        HandleEncounter(encounterCheck.Encounter);
+
+    var foodcheck = CheckForFood();
+    if (foodcheck.IsFood && foodcheck.Food != null)
     {
-        _audio.PlayWinnerEffect();
-        _screen.ShowMapMessage("WINNER!");
+        EatFood(foodcheck.Food);
     }
-}
-void CheckForEncounter()
-{
-    foreach (var encounter in map.Encounters.ToList())
+
+    var potionCheck = CheckForPotion();
+    if (potionCheck.IsPotion && potionCheck.Potion != null)
     {
-        var x = encounter.Location;
-        if (encounter.Location.X == _state.PlayerLocation.X
-            && encounter.Location.Y == _state.PlayerLocation.Y)
-        {
-            _audio.PlayEncounterEffect();
-            _screen.ShowMapMessage($"Encountered {encounter.Opponent.Name}. ; Get ready to fight!");
-            HandleEncounter(encounter);
-        }
+        DrinkPotion(potionCheck.Potion);
     }
 }
 
+bool CheckForWinState()
+{
+    return (_state.PlayerLocation.X == winLocation.X
+        && _state.PlayerLocation.Y == winLocation.Y);
+}
+void HandleWinState()
+{
+    _audio.PlayWinnerEffect();
+    _screen.ShowMapMessage("WINNER!");
+}
+(bool IsEncounter, Encounter? Encounter) CheckForEncounter()
+{
+    bool isEncounter = false;
+    Encounter? foundEncounter = null;
+    foreach (var encounter in map.Encounters)
+    {
+        isEncounter = (encounter.Location.X == _state.PlayerLocation.X && encounter.Location.Y == _state.PlayerLocation.Y);
+        if (isEncounter)
+        {
+            foundEncounter = encounter;
+            break;
+        }
+    }
+    return (isEncounter, foundEncounter);
+}
+(bool IsFood, Food? Food) CheckForFood()
+{
+    bool isFood = false;
+    Food? foundFood = null;
+    foreach (var food in map.Meals)
+    {
+        isFood = (food.Location.X == _state.PlayerLocation.X && food.Location.Y == _state.PlayerLocation.Y);
+        if (isFood)
+        {
+            foundFood = food;
+            break;
+        }
+    }
+    return (isFood, foundFood);
+}
+void EatFood(Food food)
+{
+    _screen.ShowMapMessage($"Found {food} increasing HP and stamina by {food.EffectValue}");
+    _state.PlayerHealth += food.EffectValue;
+    _state.PlayerStamina += food.EffectValue;
+}
+(bool IsPotion, Potion? Potion) CheckForPotion()
+{
+    bool isPotion = false;
+    Potion? foundPotion = null;
+    foreach (var potion in map.Potions)
+    {
+        isPotion = (potion.Location.X == _state.PlayerLocation.X && potion.Location.Y == _state.PlayerLocation.Y);
+        if (isPotion)
+            { foundPotion = potion;
+            break;
+        }
+    }
+    return (isPotion, foundPotion);
+}
+void DrinkPotion(Potion potion)
+{
+    _screen.ShowMapMessage($"Found {potion.Effect} potion, bottoms up!");
+    switch (potion.Effect)
+    {
+        case PotionEffect.Heal:
+            _state.PlayerHealth += potion.EffectValue;
+            break;
+        case PotionEffect.Harm:
+            _state.PlayerHealth -= potion.EffectValue;
+            break;
+        case PotionEffect.Poison:
+            break;
+        case PotionEffect.Invigorate:
+            _state.PlayerStamina += potion.EffectValue;
+            break;
+        case PotionEffect.Drunken:
+            _state.PlayerStamina -= potion.EffectValue;
+            break;
+        case PotionEffect.Slow:
+            break;
+        case PotionEffect.Speed:
+            break;
+        default:
+            break;
+    }
+}
 void HandleEncounter(Encounter encounter)
 {
+    _audio.PlayEncounterEffect();
+    _screen.ShowMapMessage($"Encountered {encounter.Opponent.Name}. ; Get ready to fight!");
     var outcome = _battleEngine.StartEncounter(encounter, _state.PlayerHealth);
 
     if (outcome.Success)
@@ -163,22 +247,28 @@ void HandleEncounter(Encounter encounter)
         _state.PlayerLocation.X = _state.Spawn.X;
         _state.PlayerLocation.Y = _state.Spawn.Y;
 
-        _state.ResetState();
+        ResetState();
         _screen.DrawMap(map);
     }
 
 }
-
-void IncreaseStamina(int amount) => _state.PlayerStamina += amount;
 void DrainStamina(int amount) => _state.PlayerStamina -= amount;
-void IncreaseHP(int amount) => _state.PlayerHealth += amount;
-void DecreaseHP(int amount) => _state.PlayerHealth -= amount;
+void ResetState()
+{
+    _state.PlayerHealth = PlayerHealth;
+    _state.PlayerStamina = PlayerStamina;
+    _state.PlayerSpeed = PlayerSpeed;
+    _state.CanMove = CanMove;
+    _state.VisitedLocations.Clear();
+}
 
 //Main
 _state.PlayerLocation.X = _state.Spawn.X;
 _state.PlayerLocation.Y = _state.Spawn.Y;
+ResetState();
 _screen.DrawMap(map);
 
+//Core Loop
 while (true)
 {
     var input = Console.ReadKey(true);
@@ -214,5 +304,3 @@ while (true)
             break;
     }
 }
-
-

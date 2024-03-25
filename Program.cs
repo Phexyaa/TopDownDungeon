@@ -20,14 +20,15 @@ builder.Services.AddTransient<BattleEngine>();
 builder.Services.AddTransient<EncounterFactory>();
 builder.Services.AddTransient<FoodFactory>();
 builder.Services.AddTransient<PotionFactory>();
-builder.Services.AddTransient<InterfaceDefaults>();
+builder.Services.AddTransient<InterfaceHelper>();
+builder.Services.AddTransient<TextPrompts>();
 
 using IHost host = builder.Build();
 host.Start();
 
 //Services
-Canvas? _screen = host.Services.GetService<Canvas>();
-if (_screen == null)
+Canvas? _canvas = host.Services.GetService<Canvas>();
+if (_canvas == null)
     throw new NullReferenceException("Screen service was null");
 
 MapFactory? _mapBuilder = host.Services.GetService<MapFactory>();
@@ -73,7 +74,7 @@ ConsoleColor GetPlayerColor()
 }
 Map CreateNewMap()
 {
-    return _mapBuilder.CreateMap(_screen.GetWindowSize().Height, _screen.GetWindowSize().Width);
+    return _mapBuilder.CreateMap(_canvas.GetWindowSize().Height, _canvas.GetWindowSize().Width);
 }
 
 //Logic
@@ -97,7 +98,7 @@ void MovePlayer(MovementDirection direction)
             break;
     }
 
-    if (_screen.CheckMapBounds(newLocation))
+    if (_canvas.CheckMapBounds(newLocation))
     {
         DrainStamina(1);
 
@@ -107,17 +108,17 @@ void MovePlayer(MovementDirection direction)
         _state.PlayerLocation = newLocation;
         _state.VisitedLocations.Add(newLocation);
 
-        _screen.MovePlayerSprite(newLocation, oldLocation);
+        _canvas.MovePlayerSprite(newLocation, oldLocation);
 
         ExamineNewLocation();
     }
     else
     {
         _audio.PlayAtBoundaryEffect();
-        _screen.ShowMapMessage("At Bounds!");
+        _canvas.ShowMapMessage("At Bounds!");
     }
 
-    _screen.UpdateHud();
+    _canvas.UpdateHud();
 }
 
 void ExamineNewLocation()
@@ -150,7 +151,7 @@ bool CheckForWinState()
 void HandleWinState()
 {
     _audio.PlayWinnerEffect();
-    _screen.ShowMapMessage("WINNER!");
+    _canvas.ShowMapMessage("WINNER!");
 }
 (bool IsEncounter, Encounter? Encounter) CheckForEncounter()
 {
@@ -184,7 +185,7 @@ void HandleWinState()
 }
 void EatFood(Food food)
 {
-    _screen.ShowMapMessage($"Found {food} increasing HP and stamina by {food.EffectValue}");
+    _canvas.ShowMapMessage($"Found {food} increasing HP and stamina by {food.EffectValue}");
     _state.PlayerHealth += food.EffectValue;
     _state.PlayerStamina += food.EffectValue;
 }
@@ -204,7 +205,7 @@ void EatFood(Food food)
 }
 void DrinkPotion(Potion potion)
 {
-    _screen.ShowMapMessage($"Found {potion.Effect} potion, bottoms up!");
+    _canvas.ShowMapMessage($"Found {potion.Effect} potion, bottoms up!");
     switch (potion.Effect)
     {
         case PotionEffect.Heal:
@@ -232,14 +233,14 @@ void DrinkPotion(Potion potion)
 void HandleEncounter(Encounter encounter)
 {
     _audio.PlayEncounterEffect();
-    _screen.ShowMapMessage($"Encountered {encounter.Opponent.Name}. ; Get ready to fight!");
+    _canvas.ShowMapMessage($"Encountered {encounter.Opponent.Name}. ; Get ready to fight!");
     var outcome = _battleEngine.StartEncounter(encounter, _state.PlayerHealth);
 
     if (outcome.Success)
     {
         _state.PlayerHealth = outcome.PlayerHP;
         map.Encounters.Remove(encounter);
-        _screen.DrawMap(map);
+        _canvas.DrawMap(map);
     }
     else
     {
@@ -248,7 +249,7 @@ void HandleEncounter(Encounter encounter)
         _state.PlayerLocation.Y = _state.Spawn.Y;
 
         ResetState();
-        _screen.DrawMap(map);
+        _canvas.DrawMap(map);
     }
 
 }
@@ -266,7 +267,8 @@ void ResetState()
 _state.PlayerLocation.X = _state.Spawn.X;
 _state.PlayerLocation.Y = _state.Spawn.Y;
 ResetState();
-_screen.DrawMap(map);
+_canvas.ShowStartMenu();
+_canvas.DrawMap(map);
 
 //Core Loop
 while (true)

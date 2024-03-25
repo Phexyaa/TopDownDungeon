@@ -8,7 +8,7 @@ namespace TopDownDungeon.Enums;
 internal enum GameColor
 {
     MessageColor,
-    Foreground,
+    Border,
     Background,  
     PlayerColor, 
     FoodColor,
